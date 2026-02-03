@@ -6,33 +6,42 @@ type Theme = "light" | "dark" | "system";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("system");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("theme") as Theme | null : null;
+    setMounted(true);
+    const stored = localStorage.getItem("theme") as Theme | null;
     const initial: Theme = stored ?? "system";
     setTheme(initial);
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+
     const root = document.documentElement;
-    const apply = (t: Theme) => {
+
+    const applyTheme = (t: Theme) => {
       if (t === "system") {
-        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        root.setAttribute("data-theme", prefersDark ? "dark" : "light");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.classList.toggle("dark", prefersDark);
+        root.style.colorScheme = prefersDark ? "dark" : "light";
       } else {
-        root.setAttribute("data-theme", t);
+        root.classList.toggle("dark", t === "dark");
+        root.style.colorScheme = t;
       }
     };
 
-    apply(theme);
+    applyTheme(theme);
     localStorage.setItem("theme", theme);
-  }, [theme]);
+  }, [theme, mounted]);
 
   const cycle = () => {
     setTheme((prev) => (prev === "system" ? "dark" : prev === "dark" ? "light" : "system"));
   };
 
   const label = theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light";
+
+  if (!mounted) return null;
 
   return (
     <button
